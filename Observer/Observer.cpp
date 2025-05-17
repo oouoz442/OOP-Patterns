@@ -1,30 +1,31 @@
-#include <iostream>
+п»ї#include <iostream>
 #include <vector>
 #include <string>
 #include <memory>
+#include <algorithm>
 using namespace std;
 
-// === Интерфейс Observer ===
+// === РРЅС‚РµСЂС„РµР№СЃ Observer ===
 class Observer {
 public:
-    virtual void Update(const string& state) = 0;
+    virtual void Update(const string& word) = 0;
     virtual ~Observer() = default;
 };
 
-// === Интерфейс Subject ===
+// === РРЅС‚РµСЂС„РµР№СЃ Subject ===
 class Subject {
 public:
     virtual void Attach(shared_ptr<Observer> observer) = 0;
     virtual void Detach(shared_ptr<Observer> observer) = 0;
-    virtual void Notify() = 0;
+    virtual void Notify(const string& word) = 0;
     virtual ~Subject() = default;
 };
 
-// === Конкретный Subject ===
-class ConcreteSubject : public Subject {
+// === РљРѕРЅРєСЂРµС‚РЅС‹Р№ Subject: WordWriter ===
+class WordWriter : public Subject {
 private:
     vector<shared_ptr<Observer>> observers;
-    string state;
+
 public:
     void Attach(shared_ptr<Observer> observer) override {
         observers.push_back(observer);
@@ -34,49 +35,55 @@ public:
         observers.erase(remove(observers.begin(), observers.end(), observer), observers.end());
     }
 
-    void Notify() override {
+    void Notify(const string& word) override {
         for (auto& obs : observers) {
-            obs->Update(state);
+            obs->Update(word);
         }
     }
 
-    void SetState(const string& s) {
-        state = s;
-        Notify();
-    }
-
-    string GetState() const {
-        return state;
+    void TypeWord(const string& word) {
+        cout << "\nTyping word: " << word << endl;
+        Notify(word);
     }
 };
 
-// === Конкретный Observer ===
-class ConcreteObserver : public Observer {
-private:
-    string name;
-    string observerState;
+// === РџРµСЂРµРІРѕРґС‡РёРєРё (Observers) ===
+class EngToUkrTranslator : public Observer {
 public:
-    ConcreteObserver(const string& n) : name(n) {}
-
-    void Update(const string& state) override {
-        observerState = state;
-        cout << "Observer " << name << " updated to state: " << observerState << endl;
+    void Update(const string& word) override {
+        cout << "[ENв†’UA] Translation of '" << word << "' в†’ 'РџРµСЂРµРєР»Р°Рґ'" << endl;
     }
 };
 
-// === Пример ===
+class EngToRusTranslator : public Observer {
+public:
+    void Update(const string& word) override {
+        cout << "[ENв†’RU] Translation of '" << word << "' в†’ 'РџРµСЂРµРІРѕРґ'" << endl;
+    }
+};
+
+class WordCorrector : public Observer {
+public:
+    void Update(const string& word) override {
+        cout << "[Corrector] Checking word '" << word << "' for errors...\n";
+    }
+};
+
+// === РџСЂРёРјРµСЂ ===
 int main() {
-    auto subject = make_shared<ConcreteSubject>();
+    auto writer = make_shared<WordWriter>();
 
-    auto obs1 = make_shared<ConcreteObserver>("X");
-    auto obs2 = make_shared<ConcreteObserver>("Y");
-    auto obs3 = make_shared<ConcreteObserver>("Z");
+    auto uaTranslator = make_shared<EngToUkrTranslator>();
+    auto ruTranslator = make_shared<EngToRusTranslator>();
+    auto corrector = make_shared<WordCorrector>();
 
-    subject->Attach(obs1);
-    subject->Attach(obs2);
-    subject->Attach(obs3);
+    writer->Attach(uaTranslator);
+    writer->Attach(ruTranslator);
+    writer->Attach(corrector);
 
-    subject->SetState("ABC");
+    writer->TypeWord("hello");
+    writer->TypeWord("word");
+    writer->TypeWord("teh");
 
     return 0;
 }
