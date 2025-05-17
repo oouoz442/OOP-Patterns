@@ -1,0 +1,10 @@
+.vs/
+*.exe
+*.obj
+*.user
+*.log
+*.tmp
+*.suo
+*.vcxproj.user
+*.VC.db
+*.ipch
