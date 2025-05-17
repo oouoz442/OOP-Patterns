@@ -1,55 +1,112 @@
 #include <iostream>
+#include <vector>
 #include <memory>
 using namespace std;
 
-// Стратегия
-class Strategy {
+// Интерфейс стратегии
+class SortStrategy {
 public:
-    virtual void AlgorithmInterface() = 0;
-    virtual ~Strategy() = default;
+    virtual void Sort(vector<int>& data) = 0;
+    virtual ~SortStrategy() = default;
 };
 
-class ConcreteStrategyA : public Strategy {
+// Реализация: пузырьковая сортировка
+class BubbleSort : public SortStrategy {
 public:
-    void AlgorithmInterface() override {
-        cout << "Called ConcreteStrategyA.AlgorithmInterface()\n";
+    void Sort(vector<int>& data) override {
+        cout << "Sorting using Bubble Sort...\n";
+        for (size_t i = 0; i < data.size(); ++i)
+            for (size_t j = 0; j < data.size() - i - 1; ++j)
+                if (data[j] > data[j + 1])
+                    swap(data[j], data[j + 1]);
     }
 };
 
-class ConcreteStrategyB : public Strategy {
+// Реализация: сортировка вставками
+class InsertionSort : public SortStrategy {
 public:
-    void AlgorithmInterface() override {
-        cout << "Called ConcreteStrategyB.AlgorithmInterface()\n";
+    void Sort(vector<int>& data) override {
+        cout << "Sorting using Insertion Sort...\n";
+        for (size_t i = 1; i < data.size(); ++i) {
+            int key = data[i];
+            int j = i - 1;
+            while (j >= 0 && data[j] > key) {
+                data[j + 1] = data[j];
+                --j;
+            }
+            data[j + 1] = key;
+        }
     }
 };
 
-class ConcreteStrategyC : public Strategy {
+// Реализация: быстрая сортировка
+class QuickSort : public SortStrategy {
 public:
-    void AlgorithmInterface() override {
-        cout << "Called ConcreteStrategyC.AlgorithmInterface()\n";
+    void Sort(vector<int>& data) override {
+        cout << "Sorting using Quick Sort...\n";
+        quickSort(data, 0, data.size() - 1);
+    }
+
+private:
+    void quickSort(vector<int>& arr, int low, int high) {
+        if (low < high) {
+            int pi = partition(arr, low, high);
+            quickSort(arr, low, pi - 1);
+            quickSort(arr, pi + 1, high);
+        }
+    }
+
+    int partition(vector<int>& arr, int low, int high) {
+        int pivot = arr[high];
+        int i = low - 1;
+        for (int j = low; j < high; ++j) {
+            if (arr[j] < pivot) {
+                ++i;
+                swap(arr[i], arr[j]);
+            }
+        }
+        swap(arr[i + 1], arr[high]);
+        return i + 1;
     }
 };
 
 // Контекст
-class Context {
+class Sorter {
 private:
-    unique_ptr<Strategy> strategy;
+    unique_ptr<SortStrategy> strategy;
 public:
-    Context(Strategy* strategy) : strategy(strategy) {}
-    void ContextInterface() {
-        strategy->AlgorithmInterface();
+    Sorter(SortStrategy* strategy) : strategy(strategy) {}
+
+    void SetStrategy(SortStrategy* newStrategy) {
+        strategy.reset(newStrategy);
+    }
+
+    void SortData(vector<int>& data) {
+        strategy->Sort(data);
     }
 };
 
+void Print(const vector<int>& data) {
+    for (int n : data) cout << n << " ";
+    cout << endl;
+}
+
 int main() {
-    Context contextA(new ConcreteStrategyA());
-    contextA.ContextInterface();
+    vector<int> data = { 5, 2, 9, 1, 5, 6 };
 
-    Context contextB(new ConcreteStrategyB());
-    contextB.ContextInterface();
+    Sorter sorter(new BubbleSort());
+    sorter.SortData(data);
+    Print(data);
 
-    Context contextC(new ConcreteStrategyC());
-    contextC.ContextInterface();
+    data = { 5, 2, 9, 1, 5, 6 };
+    sorter.SetStrategy(new InsertionSort());
+    sorter.SortData(data);
+    Print(data);
+
+    data = { 5, 2, 9, 1, 5, 6 };
+    sorter.SetStrategy(new QuickSort());
+    sorter.SortData(data);
+    Print(data);
 
     return 0;
 }
