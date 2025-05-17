@@ -1,112 +1,120 @@
 #include <iostream>
-#include <vector>
+#include <cmath>
 #include <memory>
 using namespace std;
 
-// Интерфейс стратегии
-class SortStrategy {
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
+// === Інтерфейси ===
+class BrakeStrategy {
 public:
-    virtual void Sort(vector<int>& data) = 0;
-    virtual ~SortStrategy() = default;
+    virtual double Brake(double velocity, double angle_deg) = 0;
+    virtual ~BrakeStrategy() = default;
 };
 
-// Реализация: пузырьковая сортировка
-class BubbleSort : public SortStrategy {
+class DriveStrategy {
 public:
-    void Sort(vector<int>& data) override {
-        cout << "Sorting using Bubble Sort...\n";
-        for (size_t i = 0; i < data.size(); ++i)
-            for (size_t j = 0; j < data.size() - i - 1; ++j)
-                if (data[j] > data[j + 1])
-                    swap(data[j], data[j + 1]);
+    virtual double Accelerate(double velocity, double length) = 0;
+    virtual ~DriveStrategy() = default;
+};
+
+// === Стратегії гальмування ===
+class AggressiveBrake : public BrakeStrategy {
+public:
+    double Brake(double velocity, double angle_deg) override {
+        double angle_rad = angle_deg * M_PI / 180.0;
+        return velocity - 0.5 * angle_rad;
     }
 };
 
-// Реализация: сортировка вставками
-class InsertionSort : public SortStrategy {
+class CarefulBrake : public BrakeStrategy {
 public:
-    void Sort(vector<int>& data) override {
-        cout << "Sorting using Insertion Sort...\n";
-        for (size_t i = 1; i < data.size(); ++i) {
-            int key = data[i];
-            int j = i - 1;
-            while (j >= 0 && data[j] > key) {
-                data[j + 1] = data[j];
-                --j;
-            }
-            data[j + 1] = key;
-        }
+    double Brake(double velocity, double angle_deg) override {
+        double angle_rad = angle_deg * M_PI / 180.0;
+        return velocity - 0.3 * angle_rad;
     }
 };
 
-// Реализация: быстрая сортировка
-class QuickSort : public SortStrategy {
+// === Стратегії прискорення ===
+class AggressiveDrive : public DriveStrategy {
 public:
-    void Sort(vector<int>& data) override {
-        cout << "Sorting using Quick Sort...\n";
-        quickSort(data, 0, data.size() - 1);
+    double Accelerate(double velocity, double length) override {
+        double a = 0.2;
+        double t = (-2 * velocity + sqrt(4 * velocity * velocity + 2 * a * length)) / (2 * a);
+        return velocity + a * t;
     }
+};
 
+class CarefulDrive : public DriveStrategy {
+public:
+    double Accelerate(double velocity, double length) override {
+        double a = 0.1;
+        double t = (-2 * velocity + sqrt(4 * velocity * velocity + 2 * a * length)) / (2 * a);
+        return velocity + a * t;
+    }
+};
+
+// === Клас автомобіля ===
+class Car {
 private:
-    void quickSort(vector<int>& arr, int low, int high) {
-        if (low < high) {
-            int pi = partition(arr, low, high);
-            quickSort(arr, low, pi - 1);
-            quickSort(arr, pi + 1, high);
-        }
-    }
+    double velocity;
+    unique_ptr<BrakeStrategy> brake;
+    unique_ptr<DriveStrategy> drive;
 
-    int partition(vector<int>& arr, int low, int high) {
-        int pivot = arr[high];
-        int i = low - 1;
-        for (int j = low; j < high; ++j) {
-            if (arr[j] < pivot) {
-                ++i;
-                swap(arr[i], arr[j]);
-            }
-        }
-        swap(arr[i + 1], arr[high]);
-        return i + 1;
-    }
-};
-
-// Контекст
-class Sorter {
-private:
-    unique_ptr<SortStrategy> strategy;
 public:
-    Sorter(SortStrategy* strategy) : strategy(strategy) {}
+    Car(BrakeStrategy* b, DriveStrategy* d)
+        : velocity(0.0), brake(b), drive(d) {}
 
-    void SetStrategy(SortStrategy* newStrategy) {
-        strategy.reset(newStrategy);
+    double GetVelocity() const {
+        return velocity;
     }
 
-    void SortData(vector<int>& data) {
-        strategy->Sort(data);
+    void BrakeAtTurn(double angle_deg) {
+        velocity = brake->Brake(velocity, angle_deg);
+    }
+
+    void AccelerateOnStraight(double length) {
+        velocity = drive->Accelerate(velocity, length);
+    }
+
+    void SetBrakeStrategy(BrakeStrategy* b) {
+        brake.reset(b);
+    }
+
+    void SetDriveStrategy(DriveStrategy* d) {
+        drive.reset(d);
     }
 };
 
-void Print(const vector<int>& data) {
-    for (int n : data) cout << n << " ";
-    cout << endl;
-}
-
+// === Тестування ===
 int main() {
-    vector<int> data = { 5, 2, 9, 1, 5, 6 };
+    Car car1(new AggressiveBrake(), new CarefulDrive());
+    Car car2(new CarefulBrake(), new AggressiveDrive());
 
-    Sorter sorter(new BubbleSort());
-    sorter.SortData(data);
-    Print(data);
+    // Пряма ділянка 5 м
+    car1.AccelerateOnStraight(5);
+    car2.AccelerateOnStraight(5);
 
-    data = { 5, 2, 9, 1, 5, 6 };
-    sorter.SetStrategy(new InsertionSort());
-    sorter.SortData(data);
-    Print(data);
+    // Поворот 90°
+    car1.BrakeAtTurn(90);
+    car2.BrakeAtTurn(90);
 
-    data = { 5, 2, 9, 1, 5, 6 };
-    sorter.SetStrategy(new QuickSort());
-    sorter.SortData(data);
-    Print(data);
+    // Пряма ділянка 10 м
+    car1.AccelerateOnStraight(10);
+    car2.AccelerateOnStraight(10);
+
+    // Поворот 180°
+    car1.BrakeAtTurn(180);
+    car2.BrakeAtTurn(180);
+
+    // Пряма ділянка 7 м
+    car1.AccelerateOnStraight(7);
+    car2.AccelerateOnStraight(7);
+
+    cout << "Car 1 velocity: " << car1.GetVelocity() << " m/s\n";
+    cout << "Car 2 velocity: " << car2.GetVelocity() << " m/s\n";
 
     return 0;
 }
