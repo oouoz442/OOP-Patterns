@@ -3,6 +3,8 @@
 #include <string>
 #include <memory>
 #include <algorithm>
+#include <windows.h>
+
 using namespace std;
 
 // === Интерфейс Observer ===
@@ -71,6 +73,8 @@ public:
 
 // === Пример ===
 int main() {
+    setlocale(LC_ALL, "");
+    SetConsoleOutputCP(CP_UTF8);
     auto writer = make_shared<WordWriter>();
 
     auto uaTranslator = make_shared<EngToUkrTranslator>();
