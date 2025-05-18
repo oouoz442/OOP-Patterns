@@ -3,106 +3,106 @@
 using namespace std;
 
 // === Абстрактные продукты ===
-class Window {
+class Herbivore {
 public:
-    virtual void Draw() const = 0;
-    virtual ~Window() = default;
+    virtual void EatGrass() const = 0;
+    virtual ~Herbivore() = default;
 };
 
-class Button {
+class Carnivore {
 public:
-    virtual void Click() const = 0;
-    virtual ~Button() = default;
+    virtual void Eat(const Herbivore& herbivore) const = 0;
+    virtual ~Carnivore() = default;
 };
 
-// === Конкретные продукты для Windows ===
-class WinWindow : public Window {
+// === Конкретные травоядные ===
+class Wildebeest : public Herbivore {
 public:
-    void Draw() const override {
-        cout << "Drawing Windows-style window\n";
+    void EatGrass() const override {
+        cout << "Wildebeest grazes.\n";
     }
 };
 
-class WinButton : public Button {
+class Bison : public Herbivore {
 public:
-    void Click() const override {
-        cout << "Clicking Windows-style button\n";
+    void EatGrass() const override {
+        cout << "Bison grazes.\n";
     }
 };
 
-// === Конкретные продукты для Mac ===
-class MacWindow : public Window {
+// === Конкретные хищники ===
+class Lion : public Carnivore {
 public:
-    void Draw() const override {
-        cout << "Drawing Mac-style window\n";
+    void Eat(const Herbivore& herbivore) const override {
+        cout << "Lion eats Wildebeest.\n";
     }
 };
 
-class MacButton : public Button {
+class Wolf : public Carnivore {
 public:
-    void Click() const override {
-        cout << "Clicking Mac-style button\n";
+    void Eat(const Herbivore& herbivore) const override {
+        cout << "Wolf eats Bison.\n";
     }
 };
 
-// === Абстрактная фабрика UI ===
-class UIFactory {
+// === Абстрактная фабрика континента ===
+class ContinentFactory {
 public:
-    virtual shared_ptr<Window> CreateWindow() const = 0;
-    virtual shared_ptr<Button> CreateButton() const = 0;
-    virtual ~UIFactory() = default;
+    virtual shared_ptr<Herbivore> CreateHerbivore() const = 0;
+    virtual shared_ptr<Carnivore> CreateCarnivore() const = 0;
+    virtual ~ContinentFactory() = default;
 };
 
-// === Конкретные фабрики ===
-class WinFactory : public UIFactory {
+// === Конкретные фабрики континентов ===
+class AfricaFactory : public ContinentFactory {
 public:
-    shared_ptr<Window> CreateWindow() const override {
-        return make_shared<WinWindow>();
+    shared_ptr<Herbivore> CreateHerbivore() const override {
+        return make_shared<Wildebeest>();
     }
 
-    shared_ptr<Button> CreateButton() const override {
-        return make_shared<WinButton>();
-    }
-};
-
-class MacFactory : public UIFactory {
-public:
-    shared_ptr<Window> CreateWindow() const override {
-        return make_shared<MacWindow>();
-    }
-
-    shared_ptr<Button> CreateButton() const override {
-        return make_shared<MacButton>();
+    shared_ptr<Carnivore> CreateCarnivore() const override {
+        return make_shared<Lion>();
     }
 };
 
-// === Приложение-клиент ===
-class Application {
+class AmericaFactory : public ContinentFactory {
+public:
+    shared_ptr<Herbivore> CreateHerbivore() const override {
+        return make_shared<Bison>();
+    }
+
+    shared_ptr<Carnivore> CreateCarnivore() const override {
+        return make_shared<Wolf>();
+    }
+};
+
+// === Мир животных ===
+class AnimalWorld {
 private:
-    shared_ptr<Window> window;
-    shared_ptr<Button> button;
+    shared_ptr<Herbivore> herbivore;
+    shared_ptr<Carnivore> carnivore;
 
 public:
-    Application(shared_ptr<UIFactory> factory) {
-        window = factory->CreateWindow();
-        button = factory->CreateButton();
+    AnimalWorld(shared_ptr<ContinentFactory> factory) {
+        herbivore = factory->CreateHerbivore();
+        carnivore = factory->CreateCarnivore();
     }
 
-    void RenderUI() {
-        window->Draw();
-        button->Click();
+    void RunFoodChain() const {
+        herbivore->EatGrass();
+        carnivore->Eat(*herbivore);
     }
 };
 
 // === main() ===
 int main() {
-    shared_ptr<UIFactory> factory1 = make_shared<WinFactory>();
-    Application app1(factory1);
-    app1.RenderUI();
+    shared_ptr<ContinentFactory> africa = make_shared<AfricaFactory>();
+    AnimalWorld world1(africa);
+    world1.RunFoodChain();
 
-    shared_ptr<UIFactory> factory2 = make_shared<MacFactory>();
-    Application app2(factory2);
-    app2.RenderUI();
+    shared_ptr<ContinentFactory> america = make_shared<AmericaFactory>();
+    AnimalWorld world2(america);
+    world2.RunFoodChain();
 
     return 0;
 }
