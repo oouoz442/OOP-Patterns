@@ -1,40 +1,57 @@
 #include <iostream>
+#include <string>
 #include <memory>
 using namespace std;
 
 // === Целевой интерфейс ===
-class Target {
+class Sliceable {
 public:
-    virtual void Request() const = 0;
-    virtual ~Target() = default;
+    virtual string Slice(int start, int finish) const = 0;
+    virtual ~Sliceable() = default;
 };
 
 // === Адаптируемый класс ===
-class Adaptee {
+class MyString {
+private:
+    string innerString;
+
 public:
-    void SpecificRequest() const {
-        cout << "Adaptee's specific request\n";
+    MyString(const string& s) : innerString(s) {}
+
+    string Substring(int start, int length) const {
+        return innerString.substr(start, length);
+    }
+
+    int Length() const {
+        return innerString.length();
     }
 };
 
 // === Адаптер ===
-class Adapter : public Target {
+class StringAdapter : public Sliceable {
 private:
-    shared_ptr<Adaptee> adaptee;
+    shared_ptr<MyString> adaptee;
 
 public:
-    Adapter(shared_ptr<Adaptee> a) : adaptee(a) {}
+    StringAdapter(shared_ptr<MyString> ms) : adaptee(ms) {}
 
-    void Request() const override {
-        adaptee->SpecificRequest();
+    string Slice(int start, int finish) const override {
+        if ((start >= 0) && (finish < adaptee->Length()) && (start <= finish)) {
+            return adaptee->Substring(start, finish - start + 1);
+        }
+        else {
+            throw runtime_error("Illegal call of Slice method");
+        }
     }
 };
 
 // === main ===
 int main() {
-    shared_ptr<Adaptee> adaptee = make_shared<Adaptee>();
-    shared_ptr<Target> target = make_shared<Adapter>(adaptee);
+    string s = "Hello, World!";
+    shared_ptr<MyString> ms = make_shared<MyString>(s);
+    shared_ptr<Sliceable> adapter = make_shared<StringAdapter>(ms);
 
-    target->Request();  // Вызывает метод Adaptee
+    cout << adapter->Slice(2, 8) << endl; // llo, Wo
+
     return 0;
 }
