@@ -36,8 +36,18 @@ public:
     StringAdapter(shared_ptr<MyString> ms) : adaptee(ms) {}
 
     string Slice(int start, int finish) const override {
-        if ((start >= 0) && (finish < adaptee->Length()) && (start <= finish)) {
-            return adaptee->Substring(start, finish - start + 1);
+        if ((start >= 0) && (finish < adaptee->Length())) {
+            if (start <= finish) {
+                return adaptee->Substring(start, finish - start + 1);
+            }
+            else {
+                // Перевернутая подстрока
+                string reversed;
+                for (int i = start; i >= finish; --i) {
+                    reversed += adaptee->Substring(i, 1);
+                }
+                return reversed;
+            }
         }
         else {
             throw runtime_error("Illegal call of Slice method");
@@ -51,7 +61,8 @@ int main() {
     shared_ptr<MyString> ms = make_shared<MyString>(s);
     shared_ptr<Sliceable> adapter = make_shared<StringAdapter>(ms);
 
-    cout << adapter->Slice(2, 8) << endl; // llo, Wo
+    cout << "Normal:   " << adapter->Slice(2, 8) << endl;   // llo, Wo
+    cout << "Reversed: " << adapter->Slice(8, 2) << endl;   // oW ,oll
 
     return 0;
 }
