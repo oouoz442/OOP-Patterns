@@ -1,64 +1,69 @@
 #include <iostream>
+#include <vector>
 #include <memory>
 using namespace std;
 
 // === Продукт ===
-class Product {
+class Document {
 public:
-    virtual void Use() const = 0;
-    virtual ~Product() = default;
+    virtual void Open() const = 0;
+    virtual ~Document() = default;
 };
 
-// === Конкретные продукты ===
-class ConcreteProductA : public Product {
+// === Конкретные документы ===
+class MyDoc : public Document {
 public:
-    void Use() const override {
-        cout << "Using Product A" << endl;
+    void Open() const override {
+        cout << "MyDoc opened\n";
     }
 };
 
-class ConcreteProductB : public Product {
+class ReportDoc : public Document {
 public:
-    void Use() const override {
-        cout << "Using Product B" << endl;
+    void Open() const override {
+        cout << "ReportDoc opened\n";
     }
 };
 
 // === Создатель ===
-class Creator {
-public:
-    virtual shared_ptr<Product> FactoryMethod() const = 0;
+class Application {
+protected:
+    vector<shared_ptr<Document>> docs;
 
-    void SomeOperation() const {
-        auto product = FactoryMethod();
-        product->Use();
+public:
+    void NewDocument() {
+        auto doc = CreateDocument();
+        docs.push_back(doc);
+        doc->Open();
     }
 
-    virtual ~Creator() = default;
+    virtual shared_ptr<Document> CreateDocument() const = 0;
+
+    virtual ~Application() = default;
 };
 
-// === Конкретные создатели ===
-class CreatorA : public Creator {
+// === Конкретные приложения ===
+class MyApp : public Application {
 public:
-    shared_ptr<Product> FactoryMethod() const override {
-        return make_shared<ConcreteProductA>();
+    shared_ptr<Document> CreateDocument() const override {
+        return make_shared<MyDoc>();
     }
 };
 
-class CreatorB : public Creator {
+class ReportApp : public Application {
 public:
-    shared_ptr<Product> FactoryMethod() const override {
-        return make_shared<ConcreteProductB>();
+    shared_ptr<Document> CreateDocument() const override {
+        return make_shared<ReportDoc>();
     }
 };
 
 // === main() ===
 int main() {
-    shared_ptr<Creator> creatorA = make_shared<CreatorA>();
-    creatorA->SomeOperation();
+    shared_ptr<Application> app1 = make_shared<MyApp>();
+    app1->NewDocument();  // MyDoc opened
 
-    shared_ptr<Creator> creatorB = make_shared<CreatorB>();
-    creatorB->SomeOperation();
+    shared_ptr<Application> app2 = make_shared<ReportApp>();
+    app2->NewDocument();  // ReportDoc opened
 
     return 0;
 }
