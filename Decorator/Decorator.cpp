@@ -50,7 +50,7 @@ public:
     }
 };
 
-// === Конкретный декоратор: Ограничитель ===
+// === Декоратор ограничения результата ===
 class BoundedCollection : public WiseDecorator {
 private:
     double bound;
@@ -68,15 +68,59 @@ public:
     }
 };
 
+// === Декоратор логирования ===
+class LoggingDecorator : public WiseDecorator {
+public:
+    LoggingDecorator(shared_ptr<WiseCollection> coll)
+        : WiseDecorator(coll) {}
+
+    double Sum() const override {
+        double result = WiseDecorator::Sum();
+        cout << "[Log] Sum = " << result << endl;
+        return result;
+    }
+
+    double Product() const override {
+        double result = WiseDecorator::Product();
+        cout << "[Log] Product = " << result << endl;
+        return result;
+    }
+};
+
+// === Декоратор фильтрации по порогу ===
+class ThresholdFilterDecorator : public WiseDecorator {
+private:
+    double threshold;
+
+public:
+    ThresholdFilterDecorator(shared_ptr<WiseCollection> coll, double t)
+        : WiseDecorator(coll), threshold(t) {}
+
+    double Sum() const override {
+        double rawSum = collection->Sum();
+        cout << "[Filter] Applied threshold = " << threshold << endl;
+        return (rawSum >= threshold) ? rawSum : 0.0;
+    }
+
+    double Product() const override {
+        double rawProd = collection->Product();
+        cout << "[Filter] Applied threshold = " << threshold << endl;
+        return (rawProd >= threshold) ? rawProd : 1.0;
+    }
+};
+
 // === main() ===
 int main() {
-    vector<double> values = { 1.5, 2.0, 3.0 };
+    vector<double> values = { 1.5, 2.0, 3.0 };  // sum = 6.5, product = 9.0
     auto simple = make_shared<SimpleWiseCollection>(values);
 
-    auto bounded = make_shared<BoundedCollection>(simple, 5.0);
+    // Цепочка декораторов: фильтрация -> логирование -> ограничение
+    auto filtered = make_shared<ThresholdFilterDecorator>(simple, 5.0);
+    auto logged = make_shared<LoggingDecorator>(filtered);
+    auto bounded = make_shared<BoundedCollection>(logged, 7.0);
 
-    cout << "Bounded Sum: " << bounded->Sum() << endl;
-    cout << "Bounded Product: " << bounded->Product() << endl;
+    cout << "Final Sum: " << bounded->Sum() << endl;
+    cout << "Final Product: " << bounded->Product() << endl;
 
     return 0;
 }
