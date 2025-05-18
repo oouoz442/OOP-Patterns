@@ -3,106 +3,106 @@
 using namespace std;
 
 // === Абстрактные продукты ===
-class AbstractProductA {
+class Window {
 public:
-    virtual void Show() const = 0;
-    virtual ~AbstractProductA() = default;
+    virtual void Draw() const = 0;
+    virtual ~Window() = default;
 };
 
-class AbstractProductB {
+class Button {
 public:
-    virtual void Display() const = 0;
-    virtual ~AbstractProductB() = default;
+    virtual void Click() const = 0;
+    virtual ~Button() = default;
 };
 
-// === Конкретные продукты семейства 1 ===
-class ProductA1 : public AbstractProductA {
+// === Конкретные продукты для Windows ===
+class WinWindow : public Window {
 public:
-    void Show() const override {
-        cout << "ProductA1\n";
+    void Draw() const override {
+        cout << "Drawing Windows-style window\n";
     }
 };
 
-class ProductB1 : public AbstractProductB {
+class WinButton : public Button {
 public:
-    void Display() const override {
-        cout << "ProductB1\n";
+    void Click() const override {
+        cout << "Clicking Windows-style button\n";
     }
 };
 
-// === Конкретные продукты семейства 2 ===
-class ProductA2 : public AbstractProductA {
+// === Конкретные продукты для Mac ===
+class MacWindow : public Window {
 public:
-    void Show() const override {
-        cout << "ProductA2\n";
+    void Draw() const override {
+        cout << "Drawing Mac-style window\n";
     }
 };
 
-class ProductB2 : public AbstractProductB {
+class MacButton : public Button {
 public:
-    void Display() const override {
-        cout << "ProductB2\n";
+    void Click() const override {
+        cout << "Clicking Mac-style button\n";
     }
 };
 
-// === Абстрактная фабрика ===
-class AbstractFactory {
+// === Абстрактная фабрика UI ===
+class UIFactory {
 public:
-    virtual shared_ptr<AbstractProductA> CreateProductA() const = 0;
-    virtual shared_ptr<AbstractProductB> CreateProductB() const = 0;
-    virtual ~AbstractFactory() = default;
+    virtual shared_ptr<Window> CreateWindow() const = 0;
+    virtual shared_ptr<Button> CreateButton() const = 0;
+    virtual ~UIFactory() = default;
 };
 
 // === Конкретные фабрики ===
-class Factory1 : public AbstractFactory {
+class WinFactory : public UIFactory {
 public:
-    shared_ptr<AbstractProductA> CreateProductA() const override {
-        return make_shared<ProductA1>();
+    shared_ptr<Window> CreateWindow() const override {
+        return make_shared<WinWindow>();
     }
 
-    shared_ptr<AbstractProductB> CreateProductB() const override {
-        return make_shared<ProductB1>();
+    shared_ptr<Button> CreateButton() const override {
+        return make_shared<WinButton>();
     }
 };
 
-class Factory2 : public AbstractFactory {
+class MacFactory : public UIFactory {
 public:
-    shared_ptr<AbstractProductA> CreateProductA() const override {
-        return make_shared<ProductA2>();
+    shared_ptr<Window> CreateWindow() const override {
+        return make_shared<MacWindow>();
     }
 
-    shared_ptr<AbstractProductB> CreateProductB() const override {
-        return make_shared<ProductB2>();
+    shared_ptr<Button> CreateButton() const override {
+        return make_shared<MacButton>();
     }
 };
 
-// === Клиент ===
-class Client {
+// === Приложение-клиент ===
+class Application {
 private:
-    shared_ptr<AbstractProductA> a;
-    shared_ptr<AbstractProductB> b;
+    shared_ptr<Window> window;
+    shared_ptr<Button> button;
 
 public:
-    Client(shared_ptr<AbstractFactory> factory) {
-        a = factory->CreateProductA();
-        b = factory->CreateProductB();
+    Application(shared_ptr<UIFactory> factory) {
+        window = factory->CreateWindow();
+        button = factory->CreateButton();
     }
 
-    void Run() {
-        a->Show();
-        b->Display();
+    void RenderUI() {
+        window->Draw();
+        button->Click();
     }
 };
 
 // === main() ===
 int main() {
-    shared_ptr<AbstractFactory> factory1 = make_shared<Factory1>();
-    Client client1(factory1);
-    client1.Run();
+    shared_ptr<UIFactory> factory1 = make_shared<WinFactory>();
+    Application app1(factory1);
+    app1.RenderUI();
 
-    shared_ptr<AbstractFactory> factory2 = make_shared<Factory2>();
-    Client client2(factory2);
-    client2.Run();
+    shared_ptr<UIFactory> factory2 = make_shared<MacFactory>();
+    Application app2(factory2);
+    app2.RenderUI();
 
     return 0;
 }
