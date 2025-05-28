@@ -2,57 +2,84 @@
 #include <vector>
 #include <string>
 
-// Класс элемента коллекции
-class Item {
-    std::string name;
+// Класс-агрегат для двух списков слов
+class WordPairsAggregate {
+    std::vector<std::string> englishWords;
+    std::vector<std::string> ukrainianWords;
 public:
-    Item(const std::string& n = "") : name(n) {}
-    std::string GetName() const { return name; }
+    WordPairsAggregate(const std::vector<std::string>& en, const std::vector<std::string>& ua)
+        : englishWords(en), ukrainianWords(ua) {}
+
+    int Count() const { return englishWords.size(); }
+
+    const std::string& GetEnglish(int i) const { return englishWords.at(i); }
+    const std::string& GetUkrainian(int i) const { return ukrainianWords.at(i); }
 };
 
-// Коллекция с геттером для элементов
-class Collection {
-    std::vector<Item> items;
-public:
-    Collection(int size) : items(size) {}
-
-    int Count() const { return static_cast<int>(items.size()); }
-    Item& operator[](int i) { return items[i]; }
-    const Item& GetItem(int i) const { return items[i]; }
-};
-
-// Итератор с возможностью задания шага
-class Iterator {
-    const Collection& collection;
+// Итератор по английским словам
+class EnglishIterator {
+    const WordPairsAggregate& agg;
     int current;
-    int step;
 public:
-    Iterator(const Collection& c, int step = 1) : collection(c), current(0), step(step) {}
+    EnglishIterator(const WordPairsAggregate& a) : agg(a), current(0) {}
     void First() { current = 0; }
-    void Next() { current += step; }
-    bool IsDone() const { return current >= collection.Count(); }
-    Item CurrentItem() const {
-        if (!IsDone()) return collection.GetItem(current);
-        return Item(""); // Возвращаем пустой элемент если вне диапазона
+    void Next() { ++current; }
+    bool IsDone() const { return current >= agg.Count(); }
+    std::string CurrentItem() const { return agg.GetEnglish(current); }
+};
+
+// Итератор по украинским словам
+class UkrainianIterator {
+    const WordPairsAggregate& agg;
+    int current;
+public:
+    UkrainianIterator(const WordPairsAggregate& a) : agg(a), current(0) {}
+    void First() { current = 0; }
+    void Next() { ++current; }
+    bool IsDone() const { return current >= agg.Count(); }
+    std::string CurrentItem() const { return agg.GetUkrainian(current); }
+};
+
+// Итератор по парам слов
+class PairIterator {
+    const WordPairsAggregate& agg;
+    int current;
+public:
+    PairIterator(const WordPairsAggregate& a) : agg(a), current(0) {}
+    void First() { current = 0; }
+    void Next() { ++current; }
+    bool IsDone() const { return current >= agg.Count(); }
+    std::pair<std::string, std::string> CurrentItem() const {
+        return { agg.GetEnglish(current), agg.GetUkrainian(current) };
     }
 };
 
 int main() {
     setlocale(LC_ALL, "");
 
-    Collection col(10);
-    for (int i = 0; i < 10; ++i)
-        col[i] = Item("Item " + std::to_string(i));
+    std::vector<std::string> en = { "cat", "dog", "apple", "book" };
+    std::vector<std::string> ua = { "кіт", "пес", "яблуко", "книга" };
+    WordPairsAggregate dict(en, ua);
 
-    Iterator it(col, 2); // Перебор через 1 (шаг 2)
-    std::cout << "Перебор через 1 (step = 2):" << std::endl;
-    for (it.First(); !it.IsDone(); it.Next())
-        std::cout << it.CurrentItem().GetName() << std::endl;
+    // Английские слова
+    std::cout << "Список английских слов:\n";
+    EnglishIterator it_en(dict);
+    for (it_en.First(); !it_en.IsDone(); it_en.Next())
+        std::cout << it_en.CurrentItem() << std::endl;
 
-    Iterator it2(col, 1); // Обычный перебор
-    std::cout << "Обычный перебор (step = 1):" << std::endl;
-    for (it2.First(); !it2.IsDone(); it2.Next())
-        std::cout << it2.CurrentItem().GetName() << std::endl;
+    // Украинские слова
+    std::cout << "\nСписок украинских слов:\n";
+    UkrainianIterator it_ua(dict);
+    for (it_ua.First(); !it_ua.IsDone(); it_ua.Next())
+        std::cout << it_ua.CurrentItem() << std::endl;
+
+    // Пары слов
+    std::cout << "\nСписок пар <английское-украинское слово>:\n";
+    PairIterator it_pair(dict);
+    for (it_pair.First(); !it_pair.IsDone(); it_pair.Next()) {
+        auto pair = it_pair.CurrentItem();
+        std::cout << "<" << pair.first << " - " << pair.second << ">" << std::endl;
+    }
 
     return 0;
 }
