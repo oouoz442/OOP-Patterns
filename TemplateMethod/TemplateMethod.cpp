@@ -1,49 +1,74 @@
 #include <iostream>
+#include <vector>
 
-// Абстрактный класс (скелет алгоритма)
-class AbstractClass {
+// Абстрактный класс
+class DataAccessObject {
 public:
-    virtual void PrimitiveOperation1() = 0;
-    virtual void PrimitiveOperation2() = 0;
-
-    // Шаблонный метод (основной алгоритм)
-    void TemplateMethod() {
-        PrimitiveOperation1();
-        PrimitiveOperation2();
-        std::cout << std::endl;
+    // Шаблонный метод
+    void Run() {
+        Connect();
+        Select();
+        Process();
+        Disconnect();
     }
+    virtual void Connect() = 0;
+    virtual void Select() = 0;
+    virtual void Process() = 0;
+    virtual void Disconnect() = 0;
 };
 
-// Конкретная реализация A
-class ConcreteClassA : public AbstractClass {
+// Конкретная реализация для категорий
+class Categories : public DataAccessObject {
 public:
-    void PrimitiveOperation1() override {
-        std::cout << "ConcreteClassA.PrimitiveOperation1()" << std::endl;
+    void Connect() override {
+        std::cout << "Categories: Connecting to database..." << std::endl;
     }
-    void PrimitiveOperation2() override {
-        std::cout << "ConcreteClassA.PrimitiveOperation2()" << std::endl;
+    void Select() override {
+        std::cout << "Categories: Selecting data..." << std::endl;
+        data = { "Cat1", "Cat2", "Cat3" };
     }
+    void Process() override {
+        std::cout << "Categories: Processing data:" << std::endl;
+        for (const auto& d : data)
+            std::cout << "  " << d << std::endl;
+    }
+    void Disconnect() override {
+        std::cout << "Categories: Disconnecting from database." << std::endl;
+    }
+private:
+    std::vector<std::string> data;
 };
 
-// Конкретная реализация B
-class ConcreteClassB : public AbstractClass {
+// Конкретная реализация для товаров
+class Products : public DataAccessObject {
 public:
-    void PrimitiveOperation1() override {
-        std::cout << "ConcreteClassB.PrimitiveOperation1()" << std::endl;
+    void Connect() override {
+        std::cout << "Products: Connecting to database..." << std::endl;
     }
-    void PrimitiveOperation2() override {
-        std::cout << "ConcreteClassB.PrimitiveOperation2()" << std::endl;
+    void Select() override {
+        std::cout << "Products: Selecting data..." << std::endl;
+        data = { "Prod1", "Prod2" };
     }
+    void Process() override {
+        std::cout << "Products: Processing data:" << std::endl;
+        for (const auto& d : data)
+            std::cout << "  " << d << std::endl;
+    }
+    void Disconnect() override {
+        std::cout << "Products: Disconnecting from database." << std::endl;
+    }
+private:
+    std::vector<std::string> data;
 };
 
 int main() {
-    AbstractClass* objA = new ConcreteClassA();
-    objA->TemplateMethod();
-    delete objA;
+    DataAccessObject* dao = new Categories();
+    dao->Run();
+    delete dao;
 
-    AbstractClass* objB = new ConcreteClassB();
-    objB->TemplateMethod();
-    delete objB;
+    dao = new Products();
+    dao->Run();
+    delete dao;
 
     return 0;
 }
