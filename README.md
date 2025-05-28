@@ -22,20 +22,6 @@
 
 ---
 
-## Структура проєкту
-
-├── Strategy/
-├── Observer/
-├── Decorator/
-├── FactoryMethod/
-├── AbstractFactory/
-├── Adapter/
-├── TemplateMethod/
-├── Iterator/
-├── Composite/
-├── Proxy/
-└── README.md
-
 ## Для чого це потрібно
 
 - Вивчення базових підходів до організації коду та архітектури ПЗ.
