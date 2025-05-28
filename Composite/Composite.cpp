@@ -2,77 +2,159 @@
 #include <vector>
 #include <string>
 #include <algorithm>
+#include <cctype>
 
-class Component {
+// Forward declaration WordElement
+class WordElement;
+
+// Абстрактный компонент
+class TextElement {
 protected:
-    std::string name;
+    TextElement* parent = nullptr;
 public:
-    Component(const std::string& name) : name(name) {}
-    virtual ~Component() = default;
-    virtual void Add(Component* component) {}
-    virtual void Remove(Component* component) {}
-    virtual void Display(int depth) const = 0;
+    virtual ~TextElement() {}
+    void SetParent(TextElement* p) { parent = p; }
+    virtual void Add(TextElement* element) {}
+    virtual void Remove(TextElement* element) {}
+    virtual void Display() const = 0;
 };
 
-class Leaf : public Component {
+// "Целый текст" (корень)
+class WholeText : public TextElement {
+    std::string title;
+    std::vector<TextElement*> chapters;
 public:
-    Leaf(const std::string& name) : Component(name) {}
-    void Display(int depth) const override {
-        for (int i = 0; i < depth; ++i) std::cout << "-";
-        std::cout << name << std::endl;
+    WholeText(const std::string& t) : title(t) {}
+
+    void Add(TextElement* element) override {
+        chapters.push_back(element);
+        element->SetParent(this);
+    }
+    void Remove(TextElement* element) override {
+        auto it = std::remove(chapters.begin(), chapters.end(), element);
+        if (it != chapters.end()) chapters.erase(it, chapters.end());
+    }
+    void Display() const override {
+        for (char ch : title)
+            std::cout << (char)std::toupper(ch) << ' ';
+        std::cout << "\n\n";
+        for (auto chapter : chapters) chapter->Display();
     }
 };
 
-class Composite : public Component {
-    std::vector<Component*> children;
+// Глава
+class ChapterElement : public TextElement {
+    std::string title;
+    std::vector<TextElement*> paragraphs;
 public:
-    Composite(const std::string& name) : Component(name) {}
-    void Add(Component* component) override {
-        children.push_back(component);
+    ChapterElement(const std::string& t) : title(t) {}
+    void Add(TextElement* element) override {
+        paragraphs.push_back(element);
+        element->SetParent(this);
     }
-    void Remove(Component* component) override {
-        auto it = std::remove(children.begin(), children.end(), component);
-        if (it != children.end())
-            children.erase(it, children.end());
+    void Remove(TextElement* element) override {
+        auto it = std::remove(paragraphs.begin(), paragraphs.end(), element);
+        if (it != paragraphs.end()) paragraphs.erase(it, paragraphs.end());
     }
-    void Display(int depth) const override {
-        for (int i = 0; i < depth; ++i) std::cout << "-";
-        std::cout << name << std::endl;
-        for (const auto& child : children)
-            child->Display(depth + 2);
+    void Display() const override {
+        std::cout << title << std::endl << std::endl;
+        for (auto par : paragraphs) par->Display();
     }
 };
+
+// Объявляем ParagraphElement заранее, метод Display реализуем позже
+class ParagraphElement : public TextElement {
+    std::vector<TextElement*> words;
+    int width;
+public:
+    ParagraphElement(int w) : width(w) {}
+    void Add(TextElement* element) override {
+        words.push_back(element);
+        element->SetParent(this);
+    }
+    void Remove(TextElement* element) override {
+        auto it = std::remove(words.begin(), words.end(), element);
+        if (it != words.end()) words.erase(it, words.end());
+    }
+    void Display() const override; // только объявление!
+};
+
+// Слово (лист)
+class WordElement : public TextElement {
+    std::string word;
+public:
+    WordElement(const std::string& w) : word(w) {}
+    int GetLength() const { return static_cast<int>(word.length()); }
+    void Add(TextElement*) override {
+        throw std::runtime_error("Cannot add to a WordElement");
+    }
+    void Remove(TextElement*) override {
+        throw std::runtime_error("Cannot remove from a WordElement");
+    }
+    void Display(bool capitalize = false) const {
+        if (capitalize && !word.empty()) {
+            std::string copy = word;
+            copy[0] = std::toupper(copy[0]);
+            std::cout << copy << " ";
+        }
+        else {
+            std::cout << word << " ";
+        }
+    }
+    void Display() const override { Display(false); }
+};
+
+// Теперь определяем метод ParagraphElement::Display
+void ParagraphElement::Display() const {
+    int horPosition = 0;
+    bool first = true;
+    for (const auto& word : words) {
+        const WordElement* we = dynamic_cast<const WordElement*>(word);
+        int len = we ? we->GetLength() : 0;
+        if (horPosition + len > width && !first) {
+            std::cout << "\n";
+            horPosition = 0;
+        }
+        if (we) we->Display(first);
+        else word->Display();
+        horPosition += len + 1;
+        first = false;
+    }
+    std::cout << "\n\n";
+}
 
 int main() {
-    setlocale(LC_ALL, "");
+    WholeText* book = new WholeText("My great book");
+    ChapterElement* chapter1 = new ChapterElement("Introduction");
+    ChapterElement* chapter2 = new ChapterElement("Conclusion");
+    ParagraphElement* p1 = new ParagraphElement(15);
+    ParagraphElement* p2 = new ParagraphElement(25);
+    ParagraphElement* p3 = new ParagraphElement(25);
+    WordElement* w1 = new WordElement("sunday");
+    WordElement* w2 = new WordElement("monday");
+    WordElement* w3 = new WordElement("tuesday");
+    WordElement* w4 = new WordElement("wednesday");
+    WordElement* w5 = new WordElement("thursday");
+    WordElement* w6 = new WordElement("friday");
+    WordElement* w7 = new WordElement("saturday");
 
-    // создание древовидной структуры
-    Composite* root = new Composite("корень");
-    root->Add(new Leaf("Лист A"));
-    root->Add(new Leaf("Лист B"));
+    book->Add(chapter1);
+    book->Add(chapter2);
+    chapter1->Add(p1);
+    chapter1->Add(p2);
+    chapter2->Add(p3);
+    chapter2->Add(p1);
 
-    Composite* comp = new Composite("Композит X");
-    comp->Add(new Leaf("Лист XA"));
-    comp->Add(new Leaf("Лист XB"));
+    p1->Add(w1); p1->Add(w2); p1->Add(w3);
+    p2->Add(w4); p2->Add(w5); p2->Add(w6);
+    p3->Add(w7); p3->Add(w1); p3->Add(w2);
 
-    root->Add(comp);
+    book->Display();
 
-    Leaf* leafC = new Leaf("Лист C");
-    root->Add(leafC);
-
-    std::cout << "Дерево 1:\n";
-    root->Display(1);
-
-    // Добавить и удалить лист
-    Leaf* leafD = new Leaf("Лист D");
-    root->Add(leafD);
-    root->Remove(leafC);
-
-    std::cout << "\nДерево 2 (после добавления Лист D и удаления Лист C):\n";
-    root->Display(1);
-
-    // Очистка памяти (для production — рекурсивные деструкторы)
-    delete leafC; delete leafD; delete root; delete comp;
+    // Очистка памяти
+    delete w1; delete w2; delete w3; delete w4; delete w5; delete w6; delete w7;
+    delete p1; delete p2; delete p3;
+    delete chapter1; delete chapter2; delete book;
 
     return 0;
 }
