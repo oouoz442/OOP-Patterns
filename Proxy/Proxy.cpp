@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <stdexcept>
+#include <chrono>
 
 // Абстрактный интерфейс
 class Fibonacci {
@@ -9,7 +10,7 @@ public:
     virtual int GetFibonacci(int n) = 0;
 };
 
-// "Пам'ятающий" объект (реальный кэш)
+// Класс-реализация с кэшем
 class RetentiveFibonacci : public Fibonacci {
     std::vector<int> fibNumbers;
 public:
@@ -31,7 +32,7 @@ public:
     }
 };
 
-// Proxy
+// Proxy (реальный объект с расширением)
 class RealFibonacci : public Fibonacci {
     RetentiveFibonacci retentiveFibonacci;
 public:
@@ -42,7 +43,7 @@ public:
             appendix.push_back(retentiveFibonacci.Last());
             for (int i = retentiveFibonacci.MaxIndex(); i < n; ++i)
                 appendix.push_back(appendix[appendix.size() - 2] + appendix[appendix.size() - 1]);
-            // Удаляем первые два элемента
+            // Удаляем первые два вспомогательных элемента
             appendix.erase(appendix.begin(), appendix.begin() + 2);
             retentiveFibonacci.Add(appendix);
         }
@@ -52,8 +53,15 @@ public:
 
 int main() {
     RealFibonacci proxy;
-    std::cout << proxy.GetFibonacci(5) << std::endl;
-    std::cout << proxy.GetFibonacci(20) << std::endl;
-    std::cout << proxy.GetFibonacci(10) << std::endl;
+    // Тест: несколько чисел, среди них есть повторное вычисление (уже закэшировано)
+    int testValues[] = { 5, 20, 10, 20 };
+    for (int n : testValues) {
+        auto start = std::chrono::high_resolution_clock::now();
+        int result = proxy.GetFibonacci(n);
+        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double, std::micro> elapsed = end - start;
+        std::cout << "Fibonacci(" << n << ") = " << result
+            << " | Time: " << elapsed.count() << " microseconds" << std::endl;
+    }
     return 0;
 }
