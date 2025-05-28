@@ -2,75 +2,57 @@
 #include <vector>
 #include <string>
 
-// Абстрактный итератор
+// Класс элемента коллекции
+class Item {
+    std::string name;
+public:
+    Item(const std::string& n = "") : name(n) {}
+    std::string GetName() const { return name; }
+};
+
+// Коллекция с геттером для элементов
+class Collection {
+    std::vector<Item> items;
+public:
+    Collection(int size) : items(size) {}
+
+    int Count() const { return static_cast<int>(items.size()); }
+    Item& operator[](int i) { return items[i]; }
+    const Item& GetItem(int i) const { return items[i]; }
+};
+
+// Итератор с возможностью задания шага
 class Iterator {
-public:
-    virtual ~Iterator() = default;
-    virtual void First() = 0;
-    virtual void Next() = 0;
-    virtual bool IsDone() const = 0;
-    virtual std::string CurrentItem() const = 0;
-};
-
-// Абстрактная коллекция (агрегат)
-class Aggregate {
-public:
-    virtual ~Aggregate() = default;
-    virtual Iterator* CreateIterator() = 0;
-    virtual int Count() const = 0;
-    virtual std::string& operator[](int index) = 0;
-    virtual const std::string& GetItem(int index) const = 0; // добавили геттер!
-};
-
-// Конкретная коллекция
-class ConcreteAggregate : public Aggregate {
-    std::vector<std::string> items;
-public:
-    ConcreteAggregate(int size) : items(size) {}
-
-    Iterator* CreateIterator() override;
-
-    int Count() const override { return static_cast<int>(items.size()); }
-
-    std::string& operator[](int index) override { return items[index]; }
-
-    const std::string& GetItem(int index) const override { return items[index]; }
-};
-
-// Конкретный итератор
-class ConcreteIterator : public Iterator {
-    const ConcreteAggregate& aggregate;
+    const Collection& collection;
     int current;
+    int step;
 public:
-    ConcreteIterator(const ConcreteAggregate& agg) : aggregate(agg), current(0) {}
-
-    void First() override { current = 0; }
-    void Next() override { ++current; }
-    bool IsDone() const override { return current >= aggregate.Count(); }
-    std::string CurrentItem() const override {
-        if (!IsDone()) return aggregate.GetItem(current);
-        return "";
+    Iterator(const Collection& c, int step = 1) : collection(c), current(0), step(step) {}
+    void First() { current = 0; }
+    void Next() { current += step; }
+    bool IsDone() const { return current >= collection.Count(); }
+    Item CurrentItem() const {
+        if (!IsDone()) return collection.GetItem(current);
+        return Item(""); // Возвращаем пустой элемент если вне диапазона
     }
 };
 
-Iterator* ConcreteAggregate::CreateIterator() {
-    return new ConcreteIterator(*this);
-}
-
-// Тестирование
 int main() {
     setlocale(LC_ALL, "");
-    ConcreteAggregate a(4);
-    a[0] = "Элемент A";
-    a[1] = "Элемент B";
-    a[2] = "Элемент C";
-    a[3] = "Элемент D";
 
-    Iterator* it = a.CreateIterator();
-    std::cout << "Перебор коллекции:" << std::endl;
-    for (it->First(); !it->IsDone(); it->Next()) {
-        std::cout << it->CurrentItem() << std::endl;
-    }
-    delete it;
+    Collection col(10);
+    for (int i = 0; i < 10; ++i)
+        col[i] = Item("Item " + std::to_string(i));
+
+    Iterator it(col, 2); // Перебор через 1 (шаг 2)
+    std::cout << "Перебор через 1 (step = 2):" << std::endl;
+    for (it.First(); !it.IsDone(); it.Next())
+        std::cout << it.CurrentItem().GetName() << std::endl;
+
+    Iterator it2(col, 1); // Обычный перебор
+    std::cout << "Обычный перебор (step = 1):" << std::endl;
+    for (it2.First(); !it2.IsDone(); it2.Next())
+        std::cout << it2.CurrentItem().GetName() << std::endl;
+
     return 0;
 }
