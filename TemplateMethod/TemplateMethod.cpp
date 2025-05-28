@@ -1,74 +1,83 @@
 #include <iostream>
-#include <vector>
+#include <cmath>
 
-// Абстрактный класс
-class DataAccessObject {
+// Интерфейс произвольной функции
+class AnyFunction {
 public:
-    // Шаблонный метод
-    void Run() {
-        Connect();
-        Select();
-        Process();
-        Disconnect();
-    }
-    virtual void Connect() = 0;
-    virtual void Select() = 0;
-    virtual void Process() = 0;
-    virtual void Disconnect() = 0;
+    virtual double Y(double x) const = 0;
+    virtual ~AnyFunction() = default;
 };
 
-// Конкретная реализация для категорий
-class Categories : public DataAccessObject {
+// Пример: функция гипербола (a * x^2 + b)
+class Hyperbola : public AnyFunction {
+    double a, b;
 public:
-    void Connect() override {
-        std::cout << "Categories: Connecting to database..." << std::endl;
+    Hyperbola(double a, double b) : a(a), b(b) {}
+    double Y(double x) const override {
+        return a * x * x + b;
     }
-    void Select() override {
-        std::cout << "Categories: Selecting data..." << std::endl;
-        data = { "Cat1", "Cat2", "Cat3" };
-    }
-    void Process() override {
-        std::cout << "Categories: Processing data:" << std::endl;
-        for (const auto& d : data)
-            std::cout << "  " << d << std::endl;
-    }
-    void Disconnect() override {
-        std::cout << "Categories: Disconnecting from database." << std::endl;
-    }
-private:
-    std::vector<std::string> data;
 };
 
-// Конкретная реализация для товаров
-class Products : public DataAccessObject {
+// Абстрактный класс интеграла (Template Method)
+class CommonIntegral {
+protected:
+    double start, finish;
+    int stepNumber;
+    const AnyFunction* func;
 public:
-    void Connect() override {
-        std::cout << "Products: Connecting to database..." << std::endl;
+    CommonIntegral(double start, double finish, int stepNumber, const AnyFunction* func)
+        : start(start), finish(finish), stepNumber(stepNumber), func(func) {}
+
+    // Часть интеграла — абстрактный метод
+    virtual double IntegralPart(double left, double right) const = 0;
+
+    // Шаблонный метод вычисления интеграла
+    double Calculate() const {
+        double step = (finish - start) / stepNumber;
+        double s = 0.0;
+        for (int i = 0; i < stepNumber; ++i)
+            s += IntegralPart(start + step * i, start + step * (i + 1));
+        return s;
     }
-    void Select() override {
-        std::cout << "Products: Selecting data..." << std::endl;
-        data = { "Prod1", "Prod2" };
-    }
-    void Process() override {
-        std::cout << "Products: Processing data:" << std::endl;
-        for (const auto& d : data)
-            std::cout << "  " << d << std::endl;
-    }
-    void Disconnect() override {
-        std::cout << "Products: Disconnecting from database." << std::endl;
-    }
-private:
-    std::vector<std::string> data;
+
+    virtual ~CommonIntegral() = default;
 };
 
+// Класс метода левых прямоугольников
+class LeftRectangle : public CommonIntegral {
+public:
+    LeftRectangle(double start, double finish, int stepNumber, const AnyFunction* func)
+        : CommonIntegral(start, finish, stepNumber, func) {}
+
+    double IntegralPart(double left, double right) const override {
+        return func->Y(left) * (right - left);
+    }
+};
+
+// --- ДОБАВЛЯЕМ МЕТОД ТРАПЕЦИЙ ---
+
+class Trapezoid : public CommonIntegral {
+public:
+    Trapezoid(double start, double finish, int stepNumber, const AnyFunction* func)
+        : CommonIntegral(start, finish, stepNumber, func) {}
+
+    double IntegralPart(double left, double right) const override {
+        // S = (f(a) + f(b)) / 2 * (b - a)
+        return (func->Y(left) + func->Y(right)) * (right - left) / 2.0;
+    }
+};
+
+// --- Пример использования ---
 int main() {
-    DataAccessObject* dao = new Categories();
-    dao->Run();
-    delete dao;
+    Hyperbola f(2.0, 3.0);
 
-    dao = new Products();
-    dao->Run();
-    delete dao;
+    CommonIntegral* integral1 = new LeftRectangle(2.0, 5.0, 100, &f);
+    std::cout << "Left Rectangle: " << integral1->Calculate() << std::endl;
+    delete integral1;
+
+    CommonIntegral* integral2 = new Trapezoid(2.0, 5.0, 100, &f);
+    std::cout << "Trapezoid: " << integral2->Calculate() << std::endl;
+    delete integral2;
 
     return 0;
 }
