@@ -65,7 +65,8 @@ public:
         // S = (f(a) + f(b)) / 2 * (b - a)
         return (func->Y(left) + func->Y(right)) * (right - left) / 2.0;
     }
-};
+}; 
+
 
 // --- Пример использования ---
 int main() {
@@ -81,3 +82,4 @@ int main() {
 
     return 0;
 }
+//
