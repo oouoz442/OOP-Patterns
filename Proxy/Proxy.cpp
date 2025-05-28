@@ -1,41 +1,59 @@
 #include <iostream>
-#include <string>
+#include <vector>
+#include <stdexcept>
 
-// Subject — интерфейс
-class Subject {
+// Абстрактный интерфейс
+class Fibonacci {
 public:
-    virtual ~Subject() {}
-    virtual void Request() = 0;
+    virtual ~Fibonacci() {}
+    virtual int GetFibonacci(int n) = 0;
 };
 
-// Реальный объект
-class RealSubject : public Subject {
+// "Пам'ятающий" объект (реальный кэш)
+class RetentiveFibonacci : public Fibonacci {
+    std::vector<int> fibNumbers;
 public:
-    void Request() override {
-        std::cout << "RealSubject: Handling request.\n";
+    RetentiveFibonacci() {
+        fibNumbers.push_back(1);
+        fibNumbers.push_back(1);
+    }
+    int MaxIndex() const { return static_cast<int>(fibNumbers.size()); }
+    int Last() const { return fibNumbers.back(); }
+    int Penultimate() const { return fibNumbers[fibNumbers.size() - 2]; }
+
+    void Add(const std::vector<int>& appendix) {
+        fibNumbers.insert(fibNumbers.end(), appendix.begin(), appendix.end());
+    }
+    int GetFibonacci(int n) override {
+        if (n <= MaxIndex())
+            return fibNumbers[n - 1];
+        throw std::runtime_error("This Fibonacci number was not yet calculated.");
     }
 };
 
 // Proxy
-class Proxy : public Subject {
-    RealSubject* realSubject;
+class RealFibonacci : public Fibonacci {
+    RetentiveFibonacci retentiveFibonacci;
 public:
-    Proxy() : realSubject(nullptr) {}
-    ~Proxy() { delete realSubject; }
-
-    void Request() override { // убрали const!
-        if (!realSubject) {
-            std::cout << "Proxy: Creating RealSubject...\n";
-            realSubject = new RealSubject();
+    int GetFibonacci(int n) override {
+        if (n > retentiveFibonacci.MaxIndex()) {
+            std::vector<int> appendix;
+            appendix.push_back(retentiveFibonacci.Penultimate());
+            appendix.push_back(retentiveFibonacci.Last());
+            for (int i = retentiveFibonacci.MaxIndex(); i < n; ++i)
+                appendix.push_back(appendix[appendix.size() - 2] + appendix[appendix.size() - 1]);
+            // Удаляем первые два элемента
+            appendix.erase(appendix.begin(), appendix.begin() + 2);
+            retentiveFibonacci.Add(appendix);
         }
-        std::cout << "Proxy: Delegating request to RealSubject.\n";
-        realSubject->Request();
+        return retentiveFibonacci.GetFibonacci(n);
     }
 };
 
 int main() {
-    Proxy proxy;
-    proxy.Request(); // создаёт реальный объект и делегирует вызов
-    proxy.Request(); // объект уже создан, только делегирует вызов
+    RealFibonacci proxy;
+    std::cout << proxy.GetFibonacci(5) << std::endl;
+    std::cout << proxy.GetFibonacci(20) << std::endl;
+    std::cout << proxy.GetFibonacci(10) << std::endl;
     return 0;
 }
